@@ -1,0 +1,410 @@
+/* ==========================================================================
+   Grupo Nutrindo Emoções — by Adiel Ríos
+   Design System derivado do Brand book v1.0 (2026)
+
+   Cores principais (brandbook, p.13):
+     Azul Petróleo     #17272D   rgb(23 39 45)
+     Ouro Envelhecido  #A8894A   rgb(168 137 74)
+     Marrom            #A06944   rgb(160 105 68)
+     Marfim            #F1EDD5   rgb(241 237 213)
+   Cores secundárias (brandbook, p.14):
+     Gelo              #D3DADD   rgb(211 218 221)
+     Branco            #FFFFFF
+
+   Tipografia (brandbook, p.17-18): Crimson.
+     Títulos    Crimson variable      Subtítulos Crimson Semibold
+     Destaque   Crimson Regular       Corpo      Crimson Regular
+
+   "Segurança cromática" (brandbook, p.15) foi traduzida aqui em razões de
+   contraste WCAG medidas. Os tons -deep e -soft são derivações de UI dos
+   tons de marca (o brandbook proíbe alterar as cores DO LOGO; a paleta de
+   interface admite tints/shades para garantir legibilidade).
+   ========================================================================== */
+
+:root {
+  /* ---- marca, valores canônicos ---- */
+  --gne-petroleo: #17272D;
+  --gne-ouro:     #A8894A;
+  --gne-marrom:   #A06944;
+  --gne-marfim:   #F1EDD5;
+  --gne-gelo:     #D3DADD;
+  --gne-branco:   #FFFFFF;
+
+  /* ---- derivações de interface ---- */
+  --petroleo-900: #0E181C;
+  --petroleo-800: #122025;
+  --petroleo-700: #17272D;
+  --petroleo-600: #1E333A;
+  --petroleo-500: #274149;
+  --ouro-claro:   #C2A263;  /* 6.33:1 sobre petróleo — texto pequeno no escuro */
+  --ouro-deep:    #6E5729;  /* 5.83:1 sobre marfim  — texto no claro */
+  --marrom-deep:  #6B4429;  /* 7.17:1 sobre marfim */
+
+  /* ---- superfícies (tema claro é o padrão) ---- */
+  --bg:         #F1EDD5;
+  --bg-alt:     #F7F4E6;
+  --surface:    #FFFFFF;
+  --surface-2:  #FAF8EE;
+  --line:       rgba(23,39,45,.14);
+  --line-forte: rgba(23,39,45,.28);
+  --filete:     #A8894A;
+
+  /* ---- texto ---- */
+  --txt:      #17272D;
+  --txt-2:    rgba(23,39,45,.72);
+  --txt-3:    rgba(23,39,45,.52);
+  --txt-acc:  #6E5729;
+  --txt-inv:  #F1EDD5;
+
+  /* ---- semânticos ---- */
+  --ok:    #2F6B4F;
+  --risco: #9E3B32;
+  --alerta:#8A5B18;
+  --info:  #2E5C74;
+  --ok-bg:    rgba(47,107,79,.10);
+  --risco-bg: rgba(158,59,50,.10);
+  --alerta-bg:rgba(138,91,24,.10);
+  --info-bg:  rgba(46,92,116,.10);
+
+  /* ---- tipografia ---- */
+  --serif: 'Crimson Pro', 'Crimson Text', Georgia, 'Times New Roman', serif;
+  --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono:  ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ---- métrica ---- */
+  --r:   4px;
+  --r-g: 8px;
+  --sh-1: 0 1px 2px rgba(23,39,45,.06), 0 1px 3px rgba(23,39,45,.05);
+  --sh-2: 0 4px 12px rgba(23,39,45,.09);
+  --sh-3: 0 12px 32px rgba(23,39,45,.16);
+  --nav-w: 232px;
+  --top-h: 56px;
+}
+
+/* tema escuro — Azul Petróleo dominante */
+[data-tema="escuro"] {
+  --bg:        #0E181C;
+  --bg-alt:    #122025;
+  --surface:   #17272D;
+  --surface-2: #1E333A;
+  --line:      rgba(241,237,213,.13);
+  --line-forte:rgba(241,237,213,.26);
+  --filete:    #A8894A;
+
+  --txt:     #F1EDD5;
+  --txt-2:   rgba(241,237,213,.74);
+  --txt-3:   rgba(241,237,213,.50);
+  --txt-acc: #C2A263;
+  --txt-inv: #17272D;
+
+  --ok:    #6FBF95;
+  --risco: #E58A80;
+  --alerta:#D9A441;
+  --info:  #7FB3CC;
+  --ok-bg:    rgba(111,191,149,.13);
+  --risco-bg: rgba(229,138,128,.13);
+  --alerta-bg:rgba(217,164,65,.13);
+  --info-bg:  rgba(127,179,204,.13);
+
+  --sh-1: 0 1px 2px rgba(0,0,0,.35);
+  --sh-2: 0 4px 14px rgba(0,0,0,.42);
+  --sh-3: 0 14px 36px rgba(0,0,0,.55);
+}
+
+/* ========================= base ========================= */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-smoothing: antialiased;
+}
+h1,h2,h3,h4 { font-family: var(--serif); font-weight: 600; line-height: 1.2; margin: 0; letter-spacing: -.01em; }
+h1 { font-size: 1.75rem; font-weight: 500; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; }
+h4 { font-size: .95rem; }
+p { margin: 0 0 .7em; }
+a { color: var(--txt-acc); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+code, pre, .mono { font-family: var(--mono); font-size: .82em; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
+
+::selection { background: var(--gne-ouro); color: var(--gne-petroleo); }
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--gne-ouro);
+  outline-offset: 2px;
+  border-radius: var(--r);
+}
+
+/* rótulo de seção — versalete, herdado da hierarquia do brandbook */
+.eyebrow {
+  font-family: var(--sans);
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--txt-3);
+  margin: 0 0 6px;
+}
+
+/* filete Ouro Envelhecido — assinatura gráfica da marca */
+.filete { height: 1px; background: var(--filete); opacity: .55; border: 0; margin: 0; }
+.filete-curto { width: 44px; height: 2px; background: var(--filete); margin: 10px 0 16px; }
+
+/* ========================= layout ========================= */
+#app { display: none; min-height: 100vh; }
+#app.ativo { display: block; }
+
+.topbar {
+  position: fixed; inset: 0 0 auto 0; height: var(--top-h); z-index: 40;
+  display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+}
+.topbar__marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.topbar__nome { font-size: .95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar__sub  { font-family: var(--sans); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-3); }
+.topbar__dir  { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* Marca gráfica: três formas que se fundem em uma (brandbook, p.7) */
+.marca-simbolo { width: 30px; height: 30px; flex: none; display: block; }
+
+.layout { display: flex; padding-top: var(--top-h); min-height: 100vh; }
+
+.nav {
+  width: var(--nav-w); flex: none; position: fixed; top: var(--top-h); bottom: 0; left: 0;
+  overflow-y: auto; background: var(--bg-alt); border-right: 1px solid var(--line);
+  padding: 14px 10px 30px;
+}
+.nav__grupo { font-family: var(--sans); font-size: .58rem; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--txt-3); padding: 14px 10px 5px; }
+.nav__item {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 8px 10px; margin-bottom: 1px; border: 0; border-radius: var(--r);
+  background: transparent; color: var(--txt-2); font-family: var(--serif); font-size: .9rem;
+  text-align: left; cursor: pointer; transition: background .13s, color .13s;
+}
+.nav__item:hover { background: var(--surface-2); color: var(--txt); }
+.nav__item.ativo { background: var(--surface); color: var(--txt); font-weight: 600; box-shadow: inset 2px 0 0 var(--gne-ouro); }
+.nav__item[hidden] { display: none; }
+.nav__ico { width: 16px; text-align: center; flex: none; opacity: .8; font-size: .95rem; }
+.nav__badge { margin-left: auto; font-family: var(--sans); font-size: .58rem; font-weight: 700;
+  background: var(--risco); color: #fff; border-radius: 20px; padding: 1px 6px; min-width: 18px; text-align: center; }
+
+.conteudo { flex: 1; min-width: 0; margin-left: var(--nav-w); padding: 22px clamp(14px, 3vw, 30px) 70px; }
+.conteudo__cabeca { margin-bottom: 18px; }
+.conteudo__cabeca h1 { margin-bottom: 2px; }
+.conteudo__cabeca p { color: var(--txt-2); font-size: .92rem; max-width: 74ch; margin: 0; }
+
+/* ========================= componentes ========================= */
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-g);
+  padding: 16px; box-shadow: var(--sh-1);
+}
+.card + .card { margin-top: 14px; }
+.card__cabeca { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.card__cabeca h2, .card__cabeca h3 { margin: 0; }
+.card__cabeca .dir { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+
+.grade { display: grid; gap: 14px; }
+.grade--2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grade--3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.grade--4 { grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); }
+
+/* KPI */
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-g); padding: 13px 14px; box-shadow: var(--sh-1); }
+.kpi__rot { font-family: var(--sans); font-size: .6rem; letter-spacing: .11em; text-transform: uppercase; color: var(--txt-3); display: block; margin-bottom: 3px; }
+.kpi__val { font-size: 1.65rem; font-weight: 600; line-height: 1.1; display: block; }
+.kpi__nota { font-family: var(--sans); font-size: .68rem; color: var(--txt-2); display: block; margin-top: 3px; }
+.kpi--ok    { border-left: 3px solid var(--ok); }
+.kpi--risco { border-left: 3px solid var(--risco); }
+.kpi--alerta{ border-left: 3px solid var(--alerta); }
+.kpi--neutro{ border-left: 3px solid var(--line-forte); }
+.kpi__val.ok { color: var(--ok); } .kpi__val.risco { color: var(--risco); } .kpi__val.alerta { color: var(--alerta); }
+
+/* botões */
+.btn {
+  font-family: var(--sans); font-size: .74rem; font-weight: 600; letter-spacing: .04em;
+  padding: 8px 14px; border-radius: var(--r); border: 1px solid transparent; cursor: pointer;
+  background: var(--gne-petroleo); color: var(--gne-marfim);
+  transition: filter .13s, background .13s, border-color .13s; line-height: 1.3;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.18); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+/* No escuro o botão primário é ouro sobre petróleo. `:not()` é obrigatório:
+   sem ele esta regra venceria .btn--linha por especificidade e todos os
+   botões de contorno virariam blocos dourados. */
+[data-tema="escuro"] .btn:not(.btn--linha):not(.btn--risco) {
+  background: var(--gne-ouro); color: var(--gne-petroleo);
+}
+.btn--ouro { background: var(--gne-ouro); color: var(--gne-petroleo); }
+.btn--linha { background: transparent; color: var(--txt); border-color: var(--line-forte); }
+.btn--linha:hover:not(:disabled) { background: var(--surface-2); filter: none; border-color: var(--gne-ouro); }
+.btn--risco { background: var(--risco); color: #fff; }
+[data-tema="escuro"] .btn--risco { color: var(--gne-petroleo); }
+.btn--p { padding: 5px 9px; font-size: .66rem; }
+.btn--bloco { width: 100%; }
+
+/* formulários */
+.campo { margin-bottom: 12px; }
+.campo > label, .rot {
+  display: block; font-family: var(--sans); font-size: .63rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--txt-3); margin-bottom: 4px;
+}
+.inp, .sel, .txa {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line-forte); border-radius: var(--r);
+  background: var(--surface); color: var(--txt); font-family: var(--serif); font-size: .92rem;
+}
+.txa { min-height: 88px; resize: vertical; line-height: 1.5; }
+.inp:focus, .sel:focus, .txa:focus { border-color: var(--gne-ouro); outline: none; box-shadow: 0 0 0 3px rgba(168,137,74,.18); }
+.inp:disabled, .sel:disabled, .txa:disabled { background: var(--surface-2); color: var(--txt-3); cursor: not-allowed; }
+.ajuda { font-family: var(--sans); font-size: .66rem; color: var(--txt-3); margin-top: 3px; }
+.linha-campos { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+/* tabelas */
+.tab-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-g); background: var(--surface); }
+table.tab { width: 100%; border-collapse: collapse; font-size: .87rem; min-width: 520px; }
+table.tab th {
+  font-family: var(--sans); font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--txt-3); text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line-forte);
+  background: var(--surface-2); white-space: nowrap; position: sticky; top: 0; z-index: 1;
+}
+table.tab td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.tab tbody tr:last-child td { border-bottom: 0; }
+table.tab tbody tr:hover { background: var(--surface-2); }
+table.tab td.num, table.tab th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* etiquetas */
+.tag {
+  display: inline-block; font-family: var(--sans); font-size: .62rem; font-weight: 600; letter-spacing: .05em;
+  padding: 2px 7px; border-radius: 20px; background: var(--surface-2); color: var(--txt-2); border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.tag--ok    { background: var(--ok-bg);    color: var(--ok);    border-color: transparent; }
+.tag--risco { background: var(--risco-bg); color: var(--risco); border-color: transparent; }
+.tag--alerta{ background: var(--alerta-bg);color: var(--alerta);border-color: transparent; }
+.tag--info  { background: var(--info-bg);  color: var(--info);  border-color: transparent; }
+.tag--ouro  { background: rgba(168,137,74,.14); color: var(--txt-acc); border-color: transparent; }
+
+/* avisos */
+.aviso { border-radius: var(--r); padding: 10px 13px; font-size: .87rem; border-left: 3px solid; margin-bottom: 12px; }
+.aviso--ok    { background: var(--ok-bg);    border-color: var(--ok); }
+.aviso--risco { background: var(--risco-bg); border-color: var(--risco); }
+.aviso--alerta{ background: var(--alerta-bg);border-color: var(--alerta); }
+.aviso--info  { background: var(--info-bg);  border-color: var(--info); }
+.aviso strong { font-weight: 600; }
+
+/* barra de progresso */
+.barra { height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.barra > i { display: block; height: 100%; background: var(--gne-ouro); transition: width .3s; }
+.barra > i.ok { background: var(--ok); } .barra > i.risco { background: var(--risco); } .barra > i.alerta { background: var(--alerta); }
+
+/* vazio */
+.vazio { text-align: center; padding: 30px 18px; color: var(--txt-3); font-size: .9rem; font-style: italic; }
+
+/* modal */
+/* z-index: topbar 40 · nav 45 · login 100 · modal 200 · toast 300.
+   O modal precisa ficar ACIMA do login: a troca de senha obrigatória do
+   primeiro acesso é exibida com a tela de login ainda montada. */
+.modal-fundo {
+  position: fixed; inset: 0; background: rgba(14,24,28,.62); z-index: 200;
+  display: flex; align-items: flex-start; justify-content: center; padding: 24px 14px; overflow-y: auto;
+  backdrop-filter: blur(2px);
+}
+.modal-fundo[hidden] { display: none; }
+.modal {
+  background: var(--surface); border: 1px solid var(--line-forte); border-radius: var(--r-g);
+  box-shadow: var(--sh-3); width: 100%; max-width: 620px; margin: auto 0;
+}
+.modal--largo { max-width: 940px; }
+.modal__cabeca { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.modal__cabeca h2 { font-size: 1.1rem; }
+.modal__corpo { padding: 18px; max-height: min(66vh, 640px); overflow-y: auto; }
+.modal__pe { display: flex; gap: 8px; justify-content: flex-end; padding: 13px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.x { margin-left: auto; background: none; border: 0; color: var(--txt-3); font-size: 1.35rem; line-height: 1; cursor: pointer; padding: 0 4px; }
+.x:hover { color: var(--txt); }
+
+/* aba */
+.abas { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
+.aba {
+  font-family: var(--sans); font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+  padding: 8px 13px; border: 0; background: none; color: var(--txt-3); cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.aba:hover { color: var(--txt); }
+.aba.ativo { color: var(--txt); border-bottom-color: var(--gne-ouro); }
+
+/* linha do tempo */
+.linha-tempo { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 1px solid var(--line); }
+.linha-tempo li { position: relative; padding: 0 0 15px 14px; font-size: .88rem; }
+.linha-tempo li::before {
+  content: ''; position: absolute; left: -23px; top: 7px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--gne-ouro); box-shadow: 0 0 0 3px var(--surface);
+}
+.linha-tempo .quando { font-family: var(--sans); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; color: var(--txt-3); display: block; }
+
+/* faixa de risco/proteção */
+.faixa-lgpd {
+  font-family: var(--sans); font-size: .66rem; color: var(--txt-3);
+  border-top: 1px solid var(--line); padding-top: 10px; margin-top: 22px; line-height: 1.6;
+}
+
+/* toast */
+#toasts { position: fixed; right: 14px; bottom: 14px; z-index: 300; display: flex; flex-direction: column; gap: 8px; max-width: min(360px, calc(100vw - 28px)); }
+.toast {
+  background: var(--surface); border: 1px solid var(--line-forte); border-left: 3px solid var(--gne-ouro);
+  border-radius: var(--r); padding: 10px 13px; box-shadow: var(--sh-2); font-size: .87rem;
+  animation: entra .2s ease-out;
+}
+.toast--ok { border-left-color: var(--ok); } .toast--risco { border-left-color: var(--risco); } .toast--alerta { border-left-color: var(--alerta); }
+@keyframes entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* ========================= login ========================= */
+#login { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  padding: 22px; background: var(--gne-petroleo); }
+#login[hidden] { display: none; }
+.login__caixa { width: 100%; max-width: 384px; text-align: center; color: var(--gne-marfim); }
+.login__marca { margin: 0 auto 16px; width: 64px; height: 64px; display: block; }
+.login__nome { font-size: 1.45rem; font-weight: 500; color: var(--gne-marfim); margin-bottom: 1px; }
+.login__ass  { font-family: var(--sans); font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ouro-claro); margin-bottom: 26px; }
+.login__form { text-align: left; }
+.login__form .rot { color: rgba(241,237,213,.6); }
+.login__form .inp { background: rgba(241,237,213,.06); border-color: rgba(241,237,213,.22); color: var(--gne-marfim); }
+.login__form .inp::placeholder { color: rgba(241,237,213,.35); }
+.login__form .inp:focus { border-color: var(--gne-ouro); box-shadow: 0 0 0 3px rgba(168,137,74,.25); }
+.login__btn { width: 100%; background: var(--gne-ouro); color: var(--gne-petroleo); padding: 11px; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; margin-top: 6px; }
+.login__erro { color: #E58A80; font-size: .84rem; margin-top: 10px; min-height: 1.2em; }
+.login__pe { font-family: var(--sans); font-size: .62rem; color: rgba(241,237,213,.42); margin-top: 22px; line-height: 1.7; }
+
+/* ========================= responsivo ========================= */
+.menu-btn { display: none; background: none; border: 0; color: var(--txt); font-size: 1.2rem; cursor: pointer; padding: 4px 6px; }
+
+@media (max-width: 900px) {
+  .menu-btn { display: block; }
+  .nav { transform: translateX(-100%); transition: transform .2s; z-index: 45; box-shadow: var(--sh-3); width: 268px; }
+  .nav.aberta { transform: none; }
+  .conteudo { margin-left: 0; padding: 18px 14px 80px; }
+  .nav-fundo { position: fixed; inset: var(--top-h) 0 0 0; background: rgba(14,24,28,.5); z-index: 44; }
+  .nav-fundo[hidden] { display: none; }
+  h1 { font-size: 1.45rem; }
+  .modal__corpo { max-height: calc(100vh - 190px); }
+}
+@media (max-width: 560px) {
+  .topbar__sub { display: none; }
+  .grade--4, .grade--3 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .kpi__val { font-size: 1.4rem; }
+}
+
+@media print {
+  .nav, .topbar, .menu-btn, .btn, #toasts { display: none !important; }
+  .conteudo { margin: 0; padding: 0; }
+  body { background: #fff; color: #000; }
+  .card { box-shadow: none; break-inside: avoid; }
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17272D">
+<meta name="description" content="Sistema operacional clínico do Grupo Nutrindo Emoções — experiência, assistência, gestão e dados numa arquitetura única.">
+<meta name="robots" content="noindex, nofollow">
+<title>GNE Clinical OS — Grupo Nutrindo Emoções</title>
+
+<link rel="stylesheet" href="css/brand.css">
+
+<!-- Crimson (brandbook, p.17) carregada de forma NÃO bloqueante.
+     Se a rede da clínica não alcançar fonts.googleapis.com, o sistema
+     precisa iniciar do mesmo jeito e cair no fallback serifado.
+     Uma folha de estilo externa bloqueante impediria o boot. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
+      href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300..700;1,300..700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300..700;1,300..700&display=swap"></noscript>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2317272D'/%3E%3Cg fill='none' stroke='%23A8894A' stroke-width='3'%3E%3Cpath d='M32 10c9 5 14 13.5 14 22.5S39 51 32 55'/%3E%3Cpath d='M32 10c-9 5-14 13.5-14 22.5S25 51 32 55'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='3.5' fill='%23A8894A'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login" hidden>
+  <div class="login__caixa">
+    <div id="login-marca" class="login__marca" aria-hidden="true"></div>
+    <h1 class="login__nome">Grupo Nutrindo Emoções</h1>
+    <p class="login__ass">Clinical OS · by Adiel Ríos</p>
+
+    <div class="aviso aviso--info" id="login-instalacao" hidden style="text-align:left;font-size:.82rem"></div>
+
+    <form class="login__form" id="login-form" autocomplete="on">
+      <div class="campo">
+        <label class="rot" for="login-email">E-mail</label>
+        <input class="inp" type="email" id="login-email" name="email" autocomplete="username" required placeholder="voce@clinica.com.br">
+      </div>
+      <div class="campo">
+        <label class="rot" for="login-senha">Senha</label>
+        <input class="inp" type="password" id="login-senha" name="senha" autocomplete="current-password" required>
+      </div>
+      <button class="btn login__btn" id="login-btn" type="submit">Entrar</button>
+      <p class="login__erro" id="login-erro" role="alert"></p>
+    </form>
+
+    <p class="login__pe">
+      Acesso individual e auditado. Cada ação fica registrada com usuário, data e hora.<br>
+      Este ambiente trata dados pessoais sensíveis de saúde (LGPD art. 11).
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════ APLICAÇÃO ══════════════ -->
+<div id="app">
+  <header class="topbar" id="topbar"></header>
+  <div class="nav-fundo" id="nav-fundo" hidden></div>
+  <div class="layout">
+    <nav class="nav" id="nav" aria-label="Módulos do sistema"></nav>
+    <main class="conteudo" id="conteudo" tabindex="-1"></main>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<noscript>
+  <div style="padding:40px;text-align:center;font-family:Georgia,serif">
+    <h1>JavaScript é necessário</h1>
+    <p>O GNE Clinical OS roda inteiramente no navegador. Habilite o JavaScript para continuar.</p>
+  </div>
+</noscript>
+
+<!-- Scripts clássicos, sem módulos: funcionam também via file:// -->
+<script src="js/core.js"></script>
+<script src="js/kpi.js"></script>
+<script src="js/ia.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/mod-direcao.js"></script>
+<script src="js/mod-relacao.js"></script>
+<script src="js/mod-assistencia.js"></script>
+<script src="js/mod-negocio.js"></script>
+<script src="js/mod-governanca.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/testes.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>
