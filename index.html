@@ -1503,7 +1503,7 @@ Esta semana no consultório percebi algo importante..."></textarea>
     <div class="alrt r" style="margin-bottom:10px;font-size:11px;"><strong>⚠ Obrigatório:</strong> Configure a Anthropic API Key para ativar toda a geração de conteúdo com IA.</div>
     <div class="fg">
       <div class="fl" style="color:var(--aul);">🔑 Anthropic API Key — Motor principal de IA</div>
-      <input class="fi" id="con-ant" type="password" placeholder="sk-ant-api03-... (de console.anthropic.com)"/>
+      <input class="fi" id="con-ant" type="password" placeholder="Configuração no servidor (de console.anthropic.com)"/>
       <div style="font-size:10px;color:var(--aud);margin-top:3px;line-height:1.5;">
         1. Acesse <span onclick="window.open('https://console.anthropic.com/settings/keys','_blank')" style="color:var(--b);cursor:pointer;font-weight:700;">console.anthropic.com → API Keys → Create Key ↗</span><br>
         2. Copie a chave (começa com <strong style="color:var(--au);">sk-ant-</strong>)<br>
@@ -1626,6 +1626,7 @@ Esta semana no consultório percebi algo importante..."></textarea>
   </div>
 </div>
 
+<script src="/security-client.js"></script>
 <script>
 // ══════════════════════════════════════════════════════
 //  SISTEMA DE APROVAÇÃO OBRIGATÓRIA
@@ -1706,7 +1707,7 @@ async function waDisparoMassaExecutar(){
   if(!lista||!template)return;
   const contatos=lista.split('\n').filter(l=>l.trim()).map(l=>{const[nome,num]=l.split(',');return{nome:(nome||'').trim(),num:(num||'').trim()};}).filter(c=>c.nome&&c.num);
   document.getElementById('wa-disparo-log').style.display='block';
-  function logD(m,c){const el=document.getElementById('wa-disparo-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${m}\n</span>`;}
+  function logD(m,c){const el=document.getElementById('wa-disparo-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${escapeHTML(m)}\n</span>`;}
   logD(`Iniciando disparo para ${contatos.length} contatos...`);
   let ok=0;
   for(const c of contatos){
@@ -1746,8 +1747,7 @@ async function nlEnviarWAExecutar(){
 // ══════════════════════════════════════════════════════
 //  CONSTANTES
 // ══════════════════════════════════════════════════════
-const CRED = {user:'adiel.rios', pass:'Adiel20261215!'};
-const IMG_KEY = 'AIzaSyCB4kRGb3Qz1zqwhrNYOrxL7b7jAKNN8iQ';
+const IMG_KEY = '';
 const BRAND_PALETTE = 'Brand colors: deep navy #0A1628 (backgrounds, depth), antique gold #C5A059 (warm accent light only), ivory cream #F5F2EB (dominant warm tone). Calm, safe, welcoming. Soft diffused light. No harsh contrasts. Ultra photorealistic — must NOT look AI-generated.';
 const STYLE_BASE = 'Ultra photorealistic 8K photography, cinematic warmth, gentle bokeh, no text, no watermark, no logo.';
 const MOOD_CALM = 'Reduces anxiety. Evokes safety, trust, warmth. Soft feather shadows. Brazilian faces.';
@@ -1769,43 +1769,36 @@ let imgGallery=[], imgCurSrc='', imgThemeIdx=0, liImgSrc='', li2ImgSrc='';
 //  LOGIN / AUTH
 // ══════════════════════════════════════════════════════
 window.onload = async () => {
-  const sessao = await ler('sessao');
-  if(sessao && sessao.user === CRED.user && sessao.ts > Date.now() - 7*24*60*60*1000){
-    entrar();
-  }
+  await purgeLegacySecrets();
+  try { const r=await fetch('/api/session'); if(r.ok){ await loadIntegrationStatus(); await entrar(); } } catch {}
 };
-
-function login(){
-  const u = document.getElementById('l-user').value.trim();
-  const p = document.getElementById('l-pass').value;
-  if(u === CRED.user && p === CRED.pass){
-    salvar('sessao',{user:u,ts:Date.now()});
-    entrar();
-  } else {
-    document.getElementById('l-err').style.display='block';
-    document.getElementById('l-pass').value='';
-  }
+async function login(){
+  const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json','X-Modo-Deus':'1'},body:JSON.stringify({username:gv('l-user'),password:document.getElementById('l-pass').value})}).catch(()=>null);
+  document.getElementById('l-pass').value='';
+  if(r?.ok){await loadIntegrationStatus();await entrar();}
+  else {const e=document.getElementById('l-err');e.textContent='Não foi possível entrar. Verifique o acesso ou tente mais tarde.';e.style.display='block';}
 }
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')login();});
+
 
 async function entrar(){
   document.getElementById('login').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   await carregarTudo();
+  initializeAuthenticatedUI();
   verificarPacote7h();
   solicitarNotificacoes();
   agendar7h();
   // Verificar se tem Anthropic Key configurada
   setTimeout(()=>{
-    const hasKey = P.anthropic_key || localStorage.getItem('ar6-anthropic_key');
+    const hasKey = P.anthropic_key;
     if(!hasKey) mostrarAlertaChave();
   }, 800);
 }
 
 function mostrarAlertaChave(){
   // Mostrar notificação de configuração necessária
-  adicionarNotif('⚠ Configure a API Key',
-    'Para gerar conteúdo com IA, configure sua Anthropic API Key em Conectar → APIs de IA.',
+  adicionarNotif('⚠ Configure a integração no servidor',
+    'Para gerar conteúdo com IA, solicite ao administrador a configuração da integração no servidor.',
     'config');
   // Mostrar alerta na central
   const alertas = document.getElementById('alertas-central');
@@ -1813,34 +1806,37 @@ function mostrarAlertaChave(){
     alertas.innerHTML = `<div class="alrt r" style="cursor:pointer;" onclick="navTo('conectar')">
       <strong>⚠ Configuração necessária:</strong> Para ativar a geração de conteúdo com IA, configure sua
       <strong>Anthropic API Key</strong> em <span style="color:var(--au);text-decoration:underline;">Conectar → APIs de IA</span>.
-      <br><span style="font-size:10px;color:var(--aud);">Obtenha sua key gratuita em console.anthropic.com → API Keys</span>
+      <br><span style="font-size:10px;color:var(--aud);">Solicite ao administrador a configuração protegida no servidor.</span>
     </div>` + alertas.innerHTML;
   }
 }
 
-function logout(){
-  salvar('sessao',null);
-  document.getElementById('app').classList.remove('visible');
-  document.getElementById('login').classList.remove('hidden');
+async function logout(){
+  try { await fetch('/api/logout',{method:'POST',headers:{'X-Modo-Deus':'1'}}); } finally { location.reload(); }
 }
 
 // ══════════════════════════════════════════════════════
 //  STORAGE
 // ══════════════════════════════════════════════════════
 async function salvar(k,v){
-  try{await window.storage.set('ar6-'+k,JSON.stringify(v));}
-  catch(e){try{localStorage.setItem('ar6-'+k,JSON.stringify(v));}catch(e2){}}
+  if(k==='perfil')v=publicProfile(v);
+  const r=await fetch('/api/data/'+encodeURIComponent(k),{method:'PUT',headers:{'Content-Type':'application/json','X-Modo-Deus':'1'},body:JSON.stringify(v)});
+  if(!r.ok)throw new Error('Não foi possível salvar. Verifique sua sessão.');
 }
 async function ler(k){
-  try{const r=await window.storage.get('ar6-'+k);if(r)return JSON.parse(r.value);}
-  catch(e){try{const r=localStorage.getItem('ar6-'+k);if(r)return JSON.parse(r);}catch(e2){}}
-  return null;
+  const r=await fetch('/api/data/'+encodeURIComponent(k));
+  if(!r.ok)throw new Error('Sessão necessária para acessar os dados.');
+  const value=await r.json();if(value!==null)return value;
+  // Migrate non-secret data from the authenticated user's previous browser.
+  let old=null;
+  try { const item=await window.storage?.get('ar6-'+k);if(item)old=JSON.parse(item.value); } catch {}
+  try { if(old===null)old=JSON.parse(localStorage.getItem('ar6-'+k)); } catch {}
+  if(old!==null){if(k==='perfil')old=publicProfile(old);await salvar(k,old);localStorage.removeItem('ar6-'+k);try{await window.storage?.delete('ar6-'+k);}catch{}}
+  return old;
 }
 
 async function carregarTudo(){
-  const p=await ler('perfil');if(p)P={...P,...p};
-  // Restaurar Anthropic key do localStorage se não estiver no perfil
-  if(!P.anthropic_key){ const ak=localStorage.getItem('ar6-anthropic_key');if(ak)P.anthropic_key=ak; }
+  const p=await ler('perfil');if(p)P={...P,...publicProfile(p)};
   const b=await ler('banco');if(b)banco=b;
   const f=await ler('fila');if(f)fila=f;
   const g=await ler('growth');if(g)growthData=g;
@@ -1942,10 +1938,10 @@ ${extra}`;
 }
 
 async function ai(prompt, system, maxTokens=1400){
-  const key = P.anthropic_key || localStorage.getItem('ar6-anthropic_key') || '';
+  const key = P.anthropic_key || '';
   const headers = {'Content-Type':'application/json'};
-  if(key){ headers['x-api-key'] = key; headers['anthropic-version'] = '2023-06-01'; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
+  if(key){ headers['x-api-key'] = key; headers['anthropic-version'] = '2023-06-01';  }
+  const r=await integrationFetch('https://api.anthropic.com/v1/messages',{
     method:'POST',headers,
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens||1400,system:system||sys(),messages:[{role:'user',content:prompt}]})
   });
@@ -2085,9 +2081,9 @@ function renderNotifBadge(){
 function renderNotifLista(){
   const el=document.getElementById('notif-lista');if(!el)return;
   if(!notifs.length){el.innerHTML='<div style="padding:14px;font-size:12px;color:var(--aud);text-align:center;">Nenhuma notificação ainda</div>';return;}
-  el.innerHTML=notifs.slice(0,15).map(n=>`<div class="notif-item" onclick="lerNotif(${n.id})">
+  el.innerHTML=notifs.slice(0,15).map(n=>`<div class="notif-item" onclick="lerNotif(${Number(n.id)||0})">
     <div class="ni-row"><div class="ni-dot" style="background:${n.lida?'var(--aud)':'var(--au)'};"></div>
-    <div><div class="ni-title">${n.titulo}</div><div class="ni-time">${n.ts} · ${n.msg.slice(0,60)}${n.msg.length>60?'...':''}</div></div></div>
+    <div><div class="ni-title">${escapeHTML(n.titulo)}</div><div class="ni-time">${escapeHTML(n.ts)} · ${escapeHTML(n.msg.slice(0,60))}${n.msg.length>60?'...':''}</div></div></div>
   </div>`).join('');
 }
 
@@ -2139,7 +2135,7 @@ function renderChecklist(){
   if(cc){
     cc.innerHTML=ckItems.slice(0,5).map(item=>`
       <div class="ck-item">
-        <div class="ck-box ${item.done?'done':''}" onclick="toggleCk('${item.id}')"><div class="ck-check">✓</div></div>
+        <div class="ck-box ${item.done?'done':''}" onclick="toggleCk('${safeContentId(item.id)}')"><div class="ck-check">✓</div></div>
         <div class="ck-label ${item.done?'done':''}">${item.txt}</div>
         <div class="ck-time">${item.time}</div>
       </div>`).join('')+
@@ -2152,7 +2148,7 @@ function renderChecklist(){
     mc.innerHTML=`<div style="margin-bottom:12px;font-size:12px;color:var(--aud);">${done} de ${total} tarefas concluídas</div>`+
     ckItems.map(item=>`
       <div class="ck-item">
-        <div class="ck-box ${item.done?'done':''}" onclick="toggleCk('${item.id}')"><div class="ck-check">✓</div></div>
+        <div class="ck-box ${item.done?'done':''}" onclick="toggleCk('${safeContentId(item.id)}')"><div class="ck-check">✓</div></div>
         <div class="ck-label ${item.done?'done':''}">${item.txt}</div>
         <div class="ck-time">${item.time}</div>
       </div>`).join('');
@@ -2276,7 +2272,7 @@ Retorne exatamente as 3 opções.`,null,1200);
 
 function renderOpcoesDia(txt,key){
   const el=document.getElementById('cal-opcoes-lista');if(!el)return;
-  el.innerHTML=`<div style="background:rgba(197,160,89,.05);border:0.5px solid rgba(197,160,89,.15);padding:12px;border-radius:2px;font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${txt}</div>
+  el.innerHTML=`<div style="background:rgba(197,160,89,.05);border:0.5px solid rgba(197,160,89,.15);padding:12px;border-radius:2px;font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${escapeHTML(txt)}</div>
   <div class="trow" style="margin-top:8px;">
     <button class="tbtn" onclick="calMarcarDone()">✓ Marcar publicado</button>
     <button class="tbtn" onclick="navigator.clipboard.writeText(\`${txt.replace(/`/g,"'")}\`)">Copiar</button>
@@ -2410,7 +2406,7 @@ function imgAtualizarPrompt(){
 function imgLog(m,ok){
   const el=document.getElementById('img-prog');if(!el)return;
   el.style.display='block';
-  el.innerHTML+=`<span class="${ok==='ok'?'lok':ok==='err'?'lerr':'linf'}">${new Date().toLocaleTimeString('pt-BR')} · ${m}\n</span>`;
+  el.innerHTML+=`<span class="${ok==='ok'?'lok':ok==='err'?'lerr':'linf'}">${new Date().toLocaleTimeString('pt-BR')} · ${escapeHTML(m)}\n</span>`;
 }
 
 async function imgGerar(){
@@ -2429,7 +2425,7 @@ async function imgGerar(){
   for(const model of MODELS){
     imgLog(`Modelo: ${model}...`);
     try{
-      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:p}]}],generationConfig:{responseModalities:['IMAGE']}})});
+      const r=await integrationFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:p}]}],generationConfig:{responseModalities:['IMAGE']}})});
       const d=await r.json();
       if(!d.error){const parts=d.candidates?.[0]?.content?.parts||[];for(const pt of parts){if(pt.inlineData?.data){imgData=`data:${pt.inlineData.mimeType||'image/png'};base64,${pt.inlineData.data}`;break;}}}
       else imgLog('✗ '+d.error.message.slice(0,60),'err');
@@ -2439,7 +2435,7 @@ async function imgGerar(){
   if(!imgData){
     imgLog('Tentando Imagen 3...');
     try{
-      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instances:[{prompt:p}],parameters:{sampleCount:1,aspectRatio:'1:1',personGeneration:'allow_adult'}})});
+      const r=await integrationFetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instances:[{prompt:p}],parameters:{sampleCount:1,aspectRatio:'1:1',personGeneration:'allow_adult'}})});
       const d=await r.json();
       if(!d.error&&d.predictions?.[0]?.bytesBase64Encoded){imgData=`data:image/png;base64,${d.predictions[0].bytesBase64Encoded}`;imgLog('✓ Imagen 3 ok!','ok');}
     }catch(e){imgLog('✗ Imagen 3: '+e.message,'err');}
@@ -2497,7 +2493,7 @@ function carregarFotoAvatar(input){
 
 function salvarDIDKey(){const k=gv('did-key');if(k){P.did_key=k;salvar('perfil',P);alert('Chave D-ID salva!');}}
 
-function logAv(m,cls='linf'){const el=document.getElementById('av-log');if(!el)return;el.style.display='block';el.innerHTML+=`<span class="${cls}">${m}\n</span>`;}
+function logAv(m,cls='linf'){const el=document.getElementById('av-log');if(!el)return;el.style.display='block';el.innerHTML+=`<span class="${cls}">${escapeHTML(m)}\n</span>`;}
 
 async function gerarAvatarVideo(){
   const key=P.did_key||gv('did-key');
@@ -2519,14 +2515,14 @@ async function gerarAvatarVideo(){
       payload.script={type:'audio',audio_url:audioUrl};
     }
     logAv('Gerando fala do avatar...');
-    const r=await fetch('https://api.d-id.com/talks',{method:'POST',headers:{'Content-Type':'application/json','Authorization':key.startsWith('Basic')?key:`Basic ${btoa(key+':')}`},body:JSON.stringify(payload)});
+    const r=await integrationFetch('https://api.d-id.com/talks',{method:'POST',headers:{'Content-Type':'application/json','Authorization':key.startsWith('Basic')?key:`Basic ${btoa(key+':')}`},body:JSON.stringify(payload)});
     const d=await r.json();
     if(d.kind==='BadRequestError'||d.error){throw new Error(d.message||d.error||'Erro D-ID');}
     const talkId=d.id;logAv(`✓ ID criado: ${talkId}. Aguardando processamento...`);
     let videoUrl=null,tentativas=0;
     while(!videoUrl&&tentativas<30){
       await new Promise(res=>setTimeout(res,3000));
-      const pr=await fetch(`https://api.d-id.com/talks/${talkId}`,{headers:{'Authorization':key.startsWith('Basic')?key:`Basic ${btoa(key+':')}`}});
+      const pr=await integrationFetch(`https://api.d-id.com/talks/${talkId}`,{headers:{'Authorization':key.startsWith('Basic')?key:`Basic ${btoa(key+':')}`}});
       const pd=await pr.json();
       logAv(`Status: ${pd.status||'processando'}... (${tentativas+1}/30)`);
       if(pd.status==='done'){videoUrl=pd.result_url;break;}
@@ -2593,14 +2589,14 @@ async function publicarInstagram(){
   const imgUrl=gv('ig-img');const cap=gv('ig-cap');const hash=gv('ig-hash');
   if(!cap){document.getElementById('ig-alrt').innerHTML='Preencha a legenda.';document.getElementById('ig-alrt').className='alrt r';document.getElementById('ig-alrt').style.display='block';return;}
   document.getElementById('ig-log').style.display='block';
-  function logIG(m,c){const el=document.getElementById('ig-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${m}\n</span>`;}
+  function logIG(m,c){const el=document.getElementById('ig-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${escapeHTML(m)}\n</span>`;}
   logIG('Publicando no Instagram...');
   try{
     const body={caption:hash?`${cap}\n\n${hash}`:cap};if(imgUrl)body.image_url=imgUrl;
-    const r=await fetch(`https://graph.facebook.com/v25.0/${uid}/media?access_token=${tok}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const r=await integrationFetch(`https://graph.facebook.com/v25.0/${uid}/media?access_token=${tok}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();if(d.error)throw new Error(d.error.message);
     logIG(`Container: ${d.id}`);await new Promise(res=>setTimeout(res,2000));
-    const pr=await fetch(`https://graph.facebook.com/v25.0/${uid}/media_publish?access_token=${tok}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creation_id:d.id})});
+    const pr=await integrationFetch(`https://graph.facebook.com/v25.0/${uid}/media_publish?access_token=${tok}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creation_id:d.id})});
     const pd=await pr.json();if(pd.error)throw new Error(pd.error.message);
     logIG('✓ Publicado! ID: '+pd.id,'lok');
     document.getElementById('ig-alrt').innerHTML='<strong>✓ Publicado no Instagram!</strong>';document.getElementById('ig-alrt').className='alrt g';document.getElementById('ig-alrt').style.display='block';
@@ -2614,7 +2610,7 @@ async function enviarWhatsApp(dest,msg){
   if(!tok||!pid){const el=document.getElementById('wa-alrt');if(el){el.innerHTML='WhatsApp não configurado.';el.className='alrt r';el.style.display='block';}return;}
   const d=dest||gv('wa-dest'),m=msg||gv('wa-msg');if(!d||!m)return;
   try{
-    const r=await fetch(`https://graph.facebook.com/v17.0/${pid}/messages`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${tok}`},body:JSON.stringify({messaging_product:'whatsapp',to:d,type:'text',text:{body:m}})});
+    const r=await integrationFetch(`https://graph.facebook.com/v17.0/${pid}/messages`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${tok}`},body:JSON.stringify({messaging_product:'whatsapp',to:d,type:'text',text:{body:m}})});
     const rd=await r.json();if(rd.error)throw new Error(rd.error.message);
     const el=document.getElementById('wa-alrt');if(el){el.innerHTML='<strong>✓ Enviado!</strong>';el.className='alrt g';el.style.display='block';}
     pubCount++;await salvar('pubcount',pubCount);atualizarStats();
@@ -2627,7 +2623,7 @@ async function publicarLinkedIn(){
   const txt=gv('li-txt');if(!txt)return;
   try{
     const body={author:urn,lifecycleState:'PUBLISHED',specificContent:{'com.linkedin.ugc.ShareContent':{shareCommentary:{text:txt},shareMediaCategory:'NONE'}},visibility:{'com.linkedin.ugc.MemberNetworkVisibility':'PUBLIC'}};
-    const r=await fetch('https://api.linkedin.com/v2/ugcPosts',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${tok}`,'X-Restli-Protocol-Version':'2.0.0'},body:JSON.stringify(body)});
+    const r=await integrationFetch('https://api.linkedin.com/v2/ugcPosts',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${tok}`,'X-Restli-Protocol-Version':'2.0.0'},body:JSON.stringify(body)});
     if(r.ok){const el=document.getElementById('li-alrt');if(el){el.innerHTML='<strong>✓ Publicado!</strong>';el.className='alrt g';el.style.display='block';}pubCount++;await salvar('pubcount',pubCount);atualizarStats();}
     else{const d=await r.json();throw new Error(d.message||'Erro LinkedIn');}
   }catch(e){const el=document.getElementById('li-alrt');if(el){el.innerHTML='Erro: '+e.message;el.className='alrt r';el.style.display='block';}}
@@ -2637,7 +2633,7 @@ async function publicarTodas(){
   const tema=gv('all-tema');if(!tema)return;
   const btn=document.getElementById('all-btn');btn.disabled=true;
   document.getElementById('all-log').style.display='block';
-  function logA(m){const el=document.getElementById('all-log');if(el)el.innerHTML+=`<span class="linf">${m}\n</span>`;}
+  function logA(m){const el=document.getElementById('all-log');if(el)el.innerHTML+=`<span class="linf">${escapeHTML(m)}\n</span>`;}
   logA('Gerando para todas as redes...');
   try{
     const [ig,wa,li]=await Promise.all([
@@ -2675,7 +2671,7 @@ async function waDisparoMassa(){
   if(!lista||!template){document.getElementById('wa-disparo-alrt').innerHTML='Preencha a lista e o template.';document.getElementById('wa-disparo-alrt').className='alrt r';document.getElementById('wa-disparo-alrt').style.display='block';return;}
   const contatos=lista.split('\n').filter(l=>l.trim()).map(l=>{const[nome,num]=l.split(',');return{nome:(nome||'').trim(),num:(num||'').trim()};}).filter(c=>c.nome&&c.num);
   document.getElementById('wa-disparo-log').style.display='block';
-  function logDM(m,c){const el=document.getElementById('wa-disparo-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${m}\n</span>`;}
+  function logDM(m,c){const el=document.getElementById('wa-disparo-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${escapeHTML(m)}\n</span>`;}
   logDM(`Iniciando disparo para ${contatos.length} contatos...`);
   let ok=0;
   for(const c of contatos){
@@ -2698,7 +2694,7 @@ async function liGerarImagem(tema,canal){
   const prompt=`Professional corporate mental health scene for LinkedIn article about "${tema}". ${BRAND_PALETTE} Horizontal 16:9 composition. ${STYLE_BASE} Cinematic warm-toned corporate photography. No text.`;
   let imgData=null;
   for(const model of ['gemini-2.0-flash-preview-image-generation','gemini-2.0-flash-exp-image-generation']){
-    try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseModalities:['IMAGE']}})});const d=await r.json();if(!d.error){const ps=d.candidates?.[0]?.content?.parts||[];for(const p of ps){if(p.inlineData?.data){imgData=`data:${p.inlineData.mimeType||'image/png'};base64,${p.inlineData.data}`;break;}}}if(imgData)break;}catch(e){}
+    try{const r=await integrationFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseModalities:['IMAGE']}})});const d=await r.json();if(!d.error){const ps=d.candidates?.[0]?.content?.parts||[];for(const p of ps){if(p.inlineData?.data){imgData=`data:${p.inlineData.mimeType||'image/png'};base64,${p.inlineData.data}`;break;}}}if(imgData)break;}catch(e){}
   }
   if(imgData){
     const imgEl=document.getElementById(canal+'-img-preview')||document.getElementById(canal+'2-img');
@@ -2730,7 +2726,7 @@ async function publicarLinkedIn2(){
   if(!P.li_tok||!P.li_urn){if(li_alrt){li_alrt.innerHTML='LinkedIn não configurado.';li_alrt.className='alrt r';li_alrt.style.display='block';}return;}
   try{
     const body={author:P.li_urn,lifecycleState:'PUBLISHED',specificContent:{'com.linkedin.ugc.ShareContent':{shareCommentary:{text:li_txt_el?.value||''},shareMediaCategory:'NONE'}},visibility:{'com.linkedin.ugc.MemberNetworkVisibility':'PUBLIC'}};
-    const r=await fetch('https://api.linkedin.com/v2/ugcPosts',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${P.li_tok}`,'X-Restli-Protocol-Version':'2.0.0'},body:JSON.stringify(body)});
+    const r=await integrationFetch('https://api.linkedin.com/v2/ugcPosts',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${P.li_tok}`,'X-Restli-Protocol-Version':'2.0.0'},body:JSON.stringify(body)});
     if(r.ok){if(li_alrt){li_alrt.innerHTML='<strong>✓ Publicado!</strong>';li_alrt.className='alrt g';li_alrt.style.display='block';}pubCount++;await salvar('pubcount',pubCount);atualizarStats();}
   }catch(e){}
 }
@@ -2929,10 +2925,10 @@ async function syncSupabase(){
   const url=P.sb_url||gv('sb-url'),key=P.sb_key||gv('sb-key');
   if(!url||!key){document.getElementById('sb-log').style.display='block';document.getElementById('sb-log').innerHTML='<span class="lerr">Configure o Supabase na aba Conectar.\n</span>';return;}
   document.getElementById('sb-log').style.display='block';
-  function logS(m,c){const el=document.getElementById('sb-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${m}\n</span>`;}
+  function logS(m,c){const el=document.getElementById('sb-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${escapeHTML(m)}\n</span>`;}
   logS('Sincronizando dados...');
   try{
-    await fetch(`${url}/rest/v1/perfil`,{method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify([{chave:'nome',valor:P.nome},{chave:'sync_ts',valor:new Date().toISOString()}])});
+    await integrationFetch(`${url}/rest/v1/perfil`,{method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify([{chave:'nome',valor:P.nome},{chave:'sync_ts',valor:new Date().toISOString()}])});
     logS('✓ Sincronizado!','lok');adicionarNotif('Backup realizado!','Dados sincronizados com Supabase.','backup');
   }catch(e){logS('✗ Erro: '+e.message,'lerr');}
 }
@@ -2941,13 +2937,13 @@ async function deployCloudflare(){
   const acc=P.cf_acc||gv('cf-acc'),tok=P.cf_tok||gv('cf-tok');
   if(!acc||!tok){document.getElementById('cf-log').style.display='block';document.getElementById('cf-log').innerHTML='<span class="lerr">Configure ID da Conta Cloudflare e Token.\n</span>';return;}
   document.getElementById('cf-log').style.display='block';
-  function logC(m,c){const el=document.getElementById('cf-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${m}\n</span>`;}
+  function logC(m,c){const el=document.getElementById('cf-log');if(el)el.innerHTML+=`<span class="${c||'linf'}">${escapeHTML(m)}\n</span>`;}
   logC('Verificando credenciais Cloudflare...');
   try{
-    const vr=await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify',{headers:{Authorization:`Bearer ${tok}`}});
+    const vr=await integrationFetch('https://api.cloudflare.com/client/v4/user/tokens/verify',{headers:{Authorization:`Bearer ${tok}`}});
     const vd=await vr.json();if(!vd.success)throw new Error('Token inválido — verifique as credenciais');
     logC('✓ Token válido','lok');
-    const cr=await fetch(`https://api.cloudflare.com/client/v4/accounts/${acc}/pages/projects`,{method:'POST',headers:{Authorization:`Bearer ${tok}`,'Content-Type':'application/json'},body:JSON.stringify({name:'adielrios-pages-dev',production_branch:'main'})});
+    const cr=await integrationFetch(`https://api.cloudflare.com/client/v4/accounts/${acc}/pages/projects`,{method:'POST',headers:{Authorization:`Bearer ${tok}`,'Content-Type':'application/json'},body:JSON.stringify({name:'adielrios-pages-dev',production_branch:'main'})});
     const cd=await cr.json();
     if(cd.success||cd.errors?.[0]?.code===8000007){logC('✓ adielrios.pages.dev configurado!','lok');}
     else throw new Error(cd.errors?.[0]?.message||'Erro');
@@ -2955,7 +2951,7 @@ async function deployCloudflare(){
 }
 
 function exportarJSON(){
-  const dados={perfil:{...P,ig_tok:'[OCULTO]',wa_tok:'[OCULTO]',li_tok:'[OCULTO]',sb_key:'[OCULTO]',gai_key:'[OCULTO]',did_key:'[OCULTO]'},banco:banco.slice(0,50),fila,growthData,exportado_em:new Date().toISOString()};
+  const dados={perfil:publicProfile(P),banco:banco.slice(0,50),fila,growthData,exportado_em:new Date().toISOString()};
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(dados,null,2)],{type:'application/json'}));
   a.download='adielrios_backup_'+new Date().toISOString().split('T')[0]+'.json';a.click();
 }
@@ -2981,7 +2977,7 @@ function alrtEl(id,html,cls=''){const e=document.getElementById(id);if(e){e.clas
 
 function logEl(boxId,msg,cls='linf'){
   const el=document.getElementById(boxId);if(!el)return;el.style.display='block';
-  el.innerHTML+=`<span class="${cls}">${new Date().toLocaleTimeString('pt-BR')} · ${msg}\n</span>`;el.scrollTop=el.scrollHeight;
+  el.innerHTML+=`<span class="${cls}">${new Date().toLocaleTimeString('pt-BR')} · ${escapeHTML(msg)}\n</span>`;el.scrollTop=el.scrollHeight;
 }
 
 // ══════════════════════════════════════════════════════
@@ -3062,7 +3058,7 @@ function renderPlano30HTML(txt, nomeMes){
   if(atual)blocos.push(atual);
 
   if(!blocos.length){
-    return `<div style="background:rgba(197,160,89,.05);border:0.5px solid rgba(197,160,89,.15);padding:14px;border-radius:2px;font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${txt}</div>`;
+    return `<div style="background:rgba(197,160,89,.05);border:0.5px solid rgba(197,160,89,.15);padding:14px;border-radius:2px;font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${escapeHTML(txt)}</div>`;
   }
 
   return blocos.map((b,i)=>{
@@ -3223,8 +3219,8 @@ async function pesquisarCientifica(){
 
   try{
     // Usar Anthropic API com web_search tool para buscar artigos reais
-    const r = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:(()=>{const h={'Content-Type':'application/json'};const k=P.anthropic_key||localStorage.getItem('ar6-anthropic_key')||'';if(k){h['x-api-key']=k;h['anthropic-version']='2023-06-01';h['anthropic-dangerous-direct-browser-access']='true';}return h;})(),
+    const r = await integrationFetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:(()=>{const h={'Content-Type':'application/json'};const k=P.anthropic_key||'';if(k){h['x-api-key']=k;h['anthropic-version']='2023-06-01';}return h;})(),
         body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:2000,
         system:`Você é um assistente de pesquisa científica para o ${P.nome||'Dr. Adiel Rios'} — psiquiatra especialista. Pesquise artigos REAIS e ATUAIS (2024-2026) nos periódicos científicos. VERIFIQUE se os artigos existem. Cite título real, autores, periódico, ano, DOI quando disponível.`,
@@ -3236,7 +3232,7 @@ async function pesquisarCientifica(){
     const textoCompleto = d.content.map(c=>c.text||'').filter(Boolean).join('\n');
 
     psArtigosEncontrados = textoCompleto;
-    document.getElementById('ps-artigos').innerHTML = `<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${textoCompleto}</div>
+    document.getElementById('ps-artigos').innerHTML = `<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${escapeHTML(textoCompleto)}</div>
     <div class="trow" style="margin-top:8px;">
       <button class="tbtn" onclick="navigator.clipboard.writeText(\`${textoCompleto.slice(0,500).replace(/`/g,"'")}\`)">Copiar artigos</button>
       <button class="tbtn" onclick="baixarStr(\`${textoCompleto.replace(/`/g,"'")}\`,'artigos')">⬇ Baixar</button>
@@ -3250,7 +3246,7 @@ async function pesquisarCientifica(){
 IMPORTANTE: Cite apenas artigos que realmente existem. Se não tiver certeza do DOI, não coloque. Periódicos: Lancet Psychiatry, JAMA Psychiatry, Nature Mental Health, Biological Psychiatry, Sleep Medicine Reviews, Neuropsychopharmacology.
 Para cada artigo: TÍTULO (real), AUTORES (sobrenomes), PERIÓDICO, ANO, ACHADO PRINCIPAL (1-2 frases), APLICAÇÃO CLÍNICA.`);
       psArtigosEncontrados = txt;
-      document.getElementById('ps-artigos').innerHTML = `<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${txt}</div>`;
+      document.getElementById('ps-artigos').innerHTML = `<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${escapeHTML(txt)}</div>`;
       document.getElementById('ps-resultado').style.display='block';
     }catch(e2){
       document.getElementById('ps-artigos').innerHTML='<div class="alrt r">Erro ao buscar. Verifique conexão.</div>';
@@ -3315,20 +3311,20 @@ function renderBanco(){
     const isImg = item.tipo==='imagem';
     return `<div style="background:var(--azc);border:0.5px solid rgba(197,160,89,.12);padding:12px;margin-bottom:8px;border-radius:2px;">
       <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
-        ${isImg?`<img src="${item.img||''}" style="width:50px;height:50px;object-fit:cover;border-radius:2px;flex-shrink:0;" alt=""/>`:''}
+        ${isImg?`<img src="${escapeHTML(safeImageURL(item.img))}" style="width:50px;height:50px;object-fit:cover;border-radius:2px;flex-shrink:0;" alt=""/>`:''}
         <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:700;color:var(--ma);margin-bottom:2px;">${item.titulo||'Conteúdo'}</div>
-          <div style="font-size:9px;color:var(--aud);letter-spacing:1px;text-transform:uppercase;">${item.tipo||'geral'} · ${item.data||''}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ma);margin-bottom:2px;">${escapeHTML(item.titulo||'Conteúdo')}</div>
+          <div style="font-size:9px;color:var(--aud);letter-spacing:1px;text-transform:uppercase;">${escapeHTML(item.tipo||'geral')} · ${escapeHTML(item.data||'')}</div>
         </div>
-        <button onclick="bancoRemover('${item.id}')" style="background:none;border:none;color:var(--aud);cursor:pointer;font-size:14px;flex-shrink:0;">×</button>
+        <button onclick="bancoRemover('${safeContentId(item.id)}')" style="background:none;border:none;color:var(--aud);cursor:pointer;font-size:14px;flex-shrink:0;">×</button>
       </div>
-      ${!isImg?`<div style="font-size:12px;color:var(--mam);line-height:1.5;max-height:60px;overflow:hidden;">${(item.conteudo||'').replace(/\n/g,' ').slice(0,200)}${item.conteudo?.length>200?'...':''}</div>`:''}
+      ${!isImg?`<div style="font-size:12px;color:var(--mam);line-height:1.5;max-height:60px;overflow:hidden;">${escapeHTML((item.conteudo||'').replace(/\n/g,' ').slice(0,200))}${item.conteudo?.length>200?'...':''}</div>`:''}
       <div class="trow" style="margin-top:7px;">
-        ${!isImg?`<button class="tbtn" onclick="bancoVerItem('${item.id}')" style="font-size:9px;padding:4px 8px;">Ver completo</button>`:''}
-        ${!isImg?`<button class="tbtn" onclick="bancoCopiar('${item.id}')" style="font-size:9px;padding:4px 8px;">Copiar</button>`:''}
-        ${!isImg?`<button class="tbtn" onclick="bancoBaixar('${item.id}')" style="font-size:9px;padding:4px 8px;">⬇</button>`:''}
-        ${isImg?`<button class="tbtn" onclick="bancoBaixarImg('${item.id}')" style="font-size:9px;padding:4px 8px;">⬇ Baixar</button>`:''}
-        ${!isImg?`<button class="tbtn" onclick="bancoPublicar('${item.id}')" style="font-size:9px;padding:4px 8px;color:var(--au);">→ Publicar</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoVerItem('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">Ver completo</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoCopiar('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">Copiar</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoBaixar('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">⬇</button>`:''}
+        ${isImg?`<button class="tbtn" onclick="bancoBaixarImg('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">⬇ Baixar</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoPublicar('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;color:var(--au);">→ Publicar</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -3338,10 +3334,10 @@ function bancoVerItem(id){
   const item = banco.find(b=>String(b.id)===String(id));if(!item)return;
   const m = document.getElementById('modal-cal');
   document.getElementById('modal-cal-titulo').textContent = item.titulo||'Conteúdo';
-  document.getElementById('modal-cal-content').innerHTML = `<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;max-height:60vh;overflow-y:auto;">${item.conteudo||''}</div>
+  document.getElementById('modal-cal-content').innerHTML = `<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;max-height:60vh;overflow-y:auto;">${escapeHTML(item.conteudo||'')}</div>
     <div class="trow" style="margin-top:10px;">
-      <button class="tbtn" onclick="bancoCopiar('${id}')">Copiar</button>
-      <button class="tbtn" onclick="bancoBaixar('${id}')">⬇ Baixar</button>
+      <button class="tbtn" onclick="bancoCopiar('${safeContentId(id)}')">Copiar</button>
+      <button class="tbtn" onclick="bancoBaixar('${safeContentId(id)}')">⬇ Baixar</button>
     </div>`;
   m.classList.remove('hidden');
 }
@@ -3391,7 +3387,7 @@ function preencherFormConectar(){
   s('con-ig-tok',P.ig_tok); s('con-ig-uid',P.ig_uid);
   s('con-wa-tok',P.wa_tok); s('con-wa-pid',P.wa_pid);
   s('con-li-tok',P.li_tok); s('con-li-urn',P.li_urn);
-  s('con-ant',P.anthropic_key||localStorage.getItem('ar6-anthropic_key')||'');
+  s('con-ant',P.anthropic_key||'');
   s('con-gai',P.gai_key);   s('con-did',P.did_key);
   s('con-nome',P.nome);     s('con-crm',P.crm);
   s('con-rqe',P.rqe);       s('con-esp',P.esp);
@@ -3399,29 +3395,9 @@ function preencherFormConectar(){
   verificarStatusRedes();
 }
 
-async function salvarTokenIG(){
-  P.ig_tok=gv('con-ig-tok');P.ig_uid=gv('con-ig-uid');
-  await salvar('perfil',P);verificarStatusRedes();
-  logEl('con-ig-log','✓ Instagram salvo','lok');
-}
-async function salvarTokenWA(){
-  P.wa_tok=gv('con-wa-tok');P.wa_pid=gv('con-wa-pid');
-  await salvar('perfil',P);verificarStatusRedes();
-  logEl('con-wa-log','✓ WhatsApp salvo','lok');
-}
-async function salvarTokenLI(){
-  P.li_tok=gv('con-li-tok');P.li_urn=gv('con-li-urn');
-  await salvar('perfil',P);verificarStatusRedes();
-  logEl('con-li-log','✓ LinkedIn salvo','lok');
-}
-async function salvarAPIs(){
-  const ant = gv('con-ant');
-  if(ant){ P.anthropic_key=ant; localStorage.setItem('ar6-anthropic_key',ant); }
-  P.gai_key=gv('con-gai');P.did_key=gv('con-did');
-  await salvar('perfil',P);
-  logEl('con-api-log','✓ APIs salvas — Anthropic Key configurada!','lok');
-  adicionarNotif('APIs configuradas!','Anthropic Key, Google AI e D-ID salvos.','config');
-}
+function serverConfigurationOnly(){ alert('Configure as integrações nas variáveis protegidas do servidor. Nunca cole credenciais nesta página.'); }
+const salvarTokenIG=serverConfigurationOnly, salvarTokenWA=serverConfigurationOnly,
+      salvarTokenLI=serverConfigurationOnly, salvarAPIs=serverConfigurationOnly;
 async function salvarPerfil(){
   P.nome=gv('con-nome')||P.nome;P.crm=gv('con-crm')||P.crm;
   P.rqe=gv('con-rqe')||P.rqe;P.esp=gv('con-esp')||P.esp;
@@ -3436,7 +3412,7 @@ async function testarIG(){
   if(!tok||!uid){logEl('con-ig-log','Configure o token e o User ID primeiro','lerr');return;}
   logEl('con-ig-log','Verificando conexão com Instagram...');
   try{
-    const r=await fetch(`https://graph.facebook.com/v25.0/${uid}?fields=username,followers_count&access_token=${tok}`);
+    const r=await integrationFetch(`https://graph.facebook.com/v25.0/${uid}?fields=username,followers_count&access_token=${tok}`);
     const d=await r.json();
     if(d.error)throw new Error(d.error.message);
     logEl('con-ig-log',`✓ Conectado: @${d.username} · ${d.followers_count?.toLocaleString('pt-BR')||'—'} seguidores`,'lok');
@@ -3450,7 +3426,7 @@ async function testarWA(){
   if(!tok||!pid){logEl('con-wa-log','Configure o token e Phone ID','lerr');return;}
   logEl('con-wa-log','Verificando conexão com WhatsApp...');
   try{
-    const r=await fetch(`https://graph.facebook.com/v17.0/${pid}`,{headers:{Authorization:`Bearer ${tok}`}});
+    const r=await integrationFetch(`https://graph.facebook.com/v17.0/${pid}`,{headers:{Authorization:`Bearer ${tok}`}});
     const d=await r.json();
     if(d.error)throw new Error(d.error.message);
     logEl('con-wa-log','✓ WhatsApp conectado: '+d.display_phone_number,'lok');
@@ -3463,7 +3439,7 @@ async function testarLI(){
   if(!tok){logEl('con-li-log','Configure o Access Token','lerr');return;}
   logEl('con-li-log','Verificando conexão com LinkedIn...');
   try{
-    const r=await fetch('https://api.linkedin.com/v2/me',{headers:{Authorization:`Bearer ${tok}`}});
+    const r=await integrationFetch('https://api.linkedin.com/v2/me',{headers:{Authorization:`Bearer ${tok}`}});
     const d=await r.json();
     if(d.status===401)throw new Error('Token inválido — verifique as credenciais ou expirado — gere um novo');
     logEl('con-li-log','✓ LinkedIn conectado: '+d.localizedFirstName+' '+d.localizedLastName,'lok');
@@ -3519,12 +3495,12 @@ function renderFila(){
     <div style="background:var(--azc);border:0.5px solid rgba(197,160,89,.${item.status==='publicado'?'08':'15'});padding:12px;margin-bottom:8px;border-radius:2px;opacity:${item.status==='publicado'?'0.55':'1'};">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--ma);">${item.tema||'Conteúdo'}</div>
-          <div style="font-size:9px;color:var(--aud);letter-spacing:1px;text-transform:uppercase;margin-top:1px;">${item.formato||'geral'} · ${item.data||''} · <span style="color:${item.status==='publicado'?'#4ade80':'var(--au)'};">${item.status==='publicado'?'✓ Publicado':'Pendente'}</span></div>
+          <div style="font-size:12px;font-weight:700;color:var(--ma);">${escapeHTML(item.tema||'Conteúdo')}</div>
+          <div style="font-size:9px;color:var(--aud);letter-spacing:1px;text-transform:uppercase;margin-top:1px;">${escapeHTML(item.formato||'geral')} · ${escapeHTML(item.data||'')} · <span style="color:${item.status==='publicado'?'#4ade80':'var(--au)'};">${item.status==='publicado'?'✓ Publicado':'Pendente'}</span></div>
         </div>
         <button onclick="filaRemover(${i})" style="background:none;border:none;color:var(--aud);cursor:pointer;font-size:16px;line-height:1;">×</button>
       </div>
-      <div style="font-size:11px;color:var(--mam);line-height:1.5;max-height:50px;overflow:hidden;">${(item.conteudo||'').replace(/\n/g,' ').slice(0,180)}...</div>
+      <div style="font-size:11px;color:var(--mam);line-height:1.5;max-height:50px;overflow:hidden;">${escapeHTML((item.conteudo||'').replace(/\n/g,' ').slice(0,180))}...</div>
       <div class="trow" style="margin-top:8px;">
         ${item.status!=='publicado'?`<button class="tbtn" onclick="filaPublicar(${i})" style="font-size:9px;color:var(--au);">→ Publicar</button>`:''}
         <button class="tbtn" onclick="filaCopiar(${i})" style="font-size:9px;">Copiar</button>
@@ -3753,7 +3729,7 @@ async function calPesquisarTendencias(){
   document.getElementById('cal-tendencias').innerHTML='';
   const dataHoje = new Date().toLocaleDateString('pt-BR');
   try{
-    const r = await fetch('https://api.anthropic.com/v1/messages',{
+    const r = await integrationFetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:1500,
@@ -3763,15 +3739,14 @@ async function calPesquisarTendencias(){
       })
     });
     const d = await r.json();
-    const texto = (d.content||[]).map(c=>c.text||'').filter(Boolean).join('
-');
-    document.getElementById('cal-tendencias').innerHTML=`<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${texto}</div><div class="trow" style="margin-top:8px;"><button class="tbtn" onclick="navigator.clipboard.writeText(document.getElementById('cal-tendencias').innerText)">Copiar</button><button class="tbtn" onclick="baixarStr(document.getElementById('cal-tendencias').innerText,'tendencias')">⬇ Baixar</button></div>`;
+    const texto = (d.content||[]).map(c=>c.text||'').filter(Boolean).join('\n');
+    document.getElementById('cal-tendencias').innerHTML=`<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${escapeHTML(texto)}</div><div class="trow" style="margin-top:8px;"><button class="tbtn" onclick="navigator.clipboard.writeText(document.getElementById('cal-tendencias').innerText)">Copiar</button><button class="tbtn" onclick="baixarStr(document.getElementById('cal-tendencias').innerText,'tendencias')">⬇ Baixar</button></div>`;
     calTendencias=[texto.split('\n').find(l=>l.startsWith('TEMA'))||texto.split('\n')[0]||''];
     adicionarNotif('Tendências atualizadas!','Novos temas em evidência pesquisados na web.','cal');
   }catch(e){
     try{
       const txt=await ai(`Liste as 5 tendências mais relevantes desta semana (${dataHoje}) em psiquiatria e saúde mental para @adielrios.psiquiatra. Para cada: TEMA, FONTE (periódico real), IDEIA DE REEL (1 frase, sem asterisco). Seja atual e verificado.`);
-      document.getElementById('cal-tendencias').innerHTML=`<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${txt}</div>`;
+      document.getElementById('cal-tendencias').innerHTML=`<div style="font-size:12px;color:var(--mam);line-height:1.7;white-space:pre-wrap;">${escapeHTML(txt)}</div>`;
       calTendencias=[txt.split('\n')[0]||''];
     }catch(e2){document.getElementById('cal-tendencias').innerHTML='<div class="alrt r">Erro ao buscar. Tente novamente.</div>';}
   }
@@ -3866,20 +3841,20 @@ renderBanco = function(){
     const highlight = (txt)=> bancoBuscaTermo ? txt.replace(new RegExp('('+bancoBuscaTermo+')','gi'),'<mark style="background:rgba(197,160,89,.3);color:var(--au);">$1</mark>') : txt;
     return `<div style="background:var(--azc);border:0.5px solid rgba(197,160,89,.12);padding:12px;margin-bottom:8px;border-radius:2px;">
       <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
-        ${isImg?`<img src="${item.img||''}" style="width:50px;height:50px;object-fit:cover;border-radius:2px;flex-shrink:0;" alt=""/>`:''}
+        ${isImg?`<img src="${escapeHTML(safeImageURL(item.img))}" style="width:50px;height:50px;object-fit:cover;border-radius:2px;flex-shrink:0;" alt=""/>`:''}
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:700;color:var(--ma);">${highlight(item.titulo||'Conteúdo')}</div>
-          <div style="font-size:9px;color:var(--aud);letter-spacing:1px;text-transform:uppercase;">${item.tipo||'geral'} · ${item.data||''}</div>
+          <div style="font-size:9px;color:var(--aud);letter-spacing:1px;text-transform:uppercase;">${escapeHTML(item.tipo||'geral')} · ${escapeHTML(item.data||'')}</div>
         </div>
-        <button onclick="bancoRemover('${item.id}')" style="background:none;border:none;color:var(--aud);cursor:pointer;font-size:14px;">×</button>
+        <button onclick="bancoRemover('${safeContentId(item.id)}')" style="background:none;border:none;color:var(--aud);cursor:pointer;font-size:14px;">×</button>
       </div>
       ${!isImg?`<div style="font-size:12px;color:var(--mam);line-height:1.5;max-height:60px;overflow:hidden;">${highlight((item.conteudo||'').replace(/\n/g,' ').slice(0,200))}${item.conteudo?.length>200?'...':''}</div>`:''}
       <div class="trow" style="margin-top:7px;">
-        ${!isImg?`<button class="tbtn" onclick="bancoVerItem('${item.id}')" style="font-size:9px;padding:4px 8px;">Ver</button>`:''}
-        ${!isImg?`<button class="tbtn" onclick="bancoCopiar('${item.id}')" style="font-size:9px;padding:4px 8px;">Copiar</button>`:''}
-        ${!isImg?`<button class="tbtn" onclick="bancoBaixar('${item.id}')" style="font-size:9px;padding:4px 8px;">⬇</button>`:''}
-        ${isImg?`<button class="tbtn" onclick="bancoBaixarImg('${item.id}')" style="font-size:9px;padding:4px 8px;">⬇ Baixar</button>`:''}
-        ${!isImg?`<button class="tbtn" onclick="bancoPublicar('${item.id}')" style="font-size:9px;padding:4px 8px;color:var(--au);">→ Publicar</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoVerItem('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">Ver</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoCopiar('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">Copiar</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoBaixar('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">⬇</button>`:''}
+        ${isImg?`<button class="tbtn" onclick="bancoBaixarImg('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;">⬇ Baixar</button>`:''}
+        ${!isImg?`<button class="tbtn" onclick="bancoPublicar('${safeContentId(item.id)}')" style="font-size:9px;padding:4px 8px;color:var(--au);">→ Publicar</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -3908,11 +3883,11 @@ function renderPacoteComScore(pkg){
       {fmt:'WhatsApp',txt:pkg.wa,id:'pkg-wa',nota:notas.wa},
     ].map(item=>`<div class="pkg-item">
       <div class="pkg-item-head" style="margin-bottom:5px;">${fmtBadge(item.fmt, item.nota)}</div>
-      <div class="pkg-text" id="${item.id}" style="font-size:12px;color:var(--mam);line-height:1.5;">${(item.txt||'').replace(/\n/g,'<br>').slice(0,240)}...</div>
+      <div class="pkg-text" id="${safeContentId(item.id)}" style="font-size:12px;color:var(--mam);line-height:1.5;">${(item.txt||'').replace(/\n/g,'<br>').slice(0,240)}...</div>
       <div class="pkg-action" style="margin-top:6px;">
-        <button class="tbtn" style="font-size:9px;" onclick="pkgCopiar('${item.id}')">Copiar</button>
-        <button class="tbtn" style="font-size:9px;" onclick="pkgBaixar('${item.id}','${item.fmt}')">⬇</button>
-        <button class="tbtn" style="font-size:9px;color:var(--au);" onclick="pkgPublicar('${item.id}','${item.fmt}')">→ Publicar</button>
+        <button class="tbtn" style="font-size:9px;" onclick="pkgCopiar('${safeContentId(item.id)}')">Copiar</button>
+        <button class="tbtn" style="font-size:9px;" onclick="pkgBaixar('${safeContentId(item.id)}','${item.fmt}')">⬇</button>
+        <button class="tbtn" style="font-size:9px;color:var(--au);" onclick="pkgPublicar('${safeContentId(item.id)}','${item.fmt}')">→ Publicar</button>
       </div>
     </div>`).join('')}
     <button class="bs" style="margin-top:8px;" onclick="gerarPacote7h()">↺ Regenerar pacote</button>
@@ -4027,7 +4002,7 @@ Hook potencial: [1 frase impactante para Reel, sem asterisco, sem travessão]
 
 VERIFIQUE que cada artigo existe realmente. Se não tiver certeza, não invente.`;
   try{
-    const r = await fetch('https://api.anthropic.com/v1/messages',{
+    const r = await integrationFetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:2000,
@@ -4098,7 +4073,7 @@ async function buscarNoticias(){
   document.getElementById('news-resultado').style.display = 'none';
   const hoje = new Date().toLocaleDateString('pt-BR');
   try{
-    const r = await fetch('https://api.anthropic.com/v1/messages',{
+    const r = await integrationFetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:1500,
@@ -4282,7 +4257,7 @@ async function analisarPerfilIG(){
   document.getElementById('perfil-ldg').style.display = 'block';
   document.getElementById('perfil-out').style.display = 'none';
   try{
-    const r = await fetch('https://api.anthropic.com/v1/messages',{
+    const r = await integrationFetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:1800,
@@ -4332,12 +4307,10 @@ nav = function(btn, id){
 // ══════════════════════════════════════════════════════
 //  INICIALIZAÇÃO FINAL
 // ══════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
-  document.getElementById('l-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('l-pass').focus();});
-  const p30mes=document.getElementById('p30-mes');
-  if(p30mes)p30mes.value=new Date().getMonth();
-  setTimeout(()=>{
+let authenticatedUIReady=false;
+function initializeAuthenticatedUI(){
+  if(authenticatedUIReady)return;authenticatedUIReady=true;
+
     podSetMode('solo');
     avatarSetMode('texto');
     renderCrescimentoDefics();
@@ -4347,7 +4320,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     autoSaveSetup();
     renderAgendaHoje();
     renderLiveHorarios();
-  },500);
+
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+  document.getElementById('l-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('l-pass').focus();});
+  const p30mes=document.getElementById('p30-mes');
+  if(p30mes)p30mes.value=new Date().getMonth();
+
 });
 </script>
 </body>
